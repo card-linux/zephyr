@@ -1,0 +1,20 @@
+menuconfig ADXL345
+	bool "ADXL345 sensor"
+	depends on (I2C && HAS_DTS_I2C) || (SPI && HAS_DTS_SPI)
+	help
+	 Enable driver for ADXL345 I2C-based (SPI not supported now) acceleration sensor.
+
+if ADXL345
+
+choice ADXL345_BUS_TYPE
+	prompt "Interface type"
+	help
+	  Select interface the digital interface type for the ADXL345
+
+config ADXL345_I2C
+	depends on I2C
+	bool "I2C Interface"
+
+endchoice
+
+endif
