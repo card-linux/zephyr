@@ -1,0 +1,21 @@
+#
+# Copyright (c) 2018 Analog Devices Inc.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+title: BH1730FVC I2C light sensor
+
+description: >
+    This is a representation of the BH1730FVC lux sensor
+
+inherits:
+    !include i2c-device.yaml
+
+properties:
+    compatible:
+      constraint: "rohm,bh1730fvc"
+
+    int1-gpios:
+      type: compound
+      category: optional
