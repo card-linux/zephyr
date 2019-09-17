@@ -64,6 +64,12 @@
 #include <stm32l0xx_ll_adc.h>
 #endif
 
+#ifdef CONFIG_COUNTER_RTC_STM32
+#include <stm32l0xx_ll_exti.h>
+#include <stm32l0xx_ll_pwr.h>
+#include <stm32l0xx_ll_rtc.h>
+#endif
+
 #endif /* !_ASMLANGUAGE */
 
 #endif /* _STM32L0_SOC_H_ */
