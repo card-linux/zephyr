@@ -403,8 +403,12 @@ static int stm32_clock_control_init(struct device *dev)
 #elif CONFIG_CLOCK_STM32_SYSCLK_SRC_MSI
 
 	/* Set MSI Range */
+#if defined (CONFIG_SOC_SERIES_STM32L0X)
+	LL_RCC_MSI_SetRange(CONFIG_CLOCK_STM32_MSI_RANGE << RCC_ICSCR_MSIRANGE_Pos);
+#else
 	LL_RCC_MSI_EnableRangeSelection();
 	LL_RCC_MSI_SetRange(CONFIG_CLOCK_STM32_MSI_RANGE << RCC_CR_MSIRANGE_Pos);
+#endif
 
 	/* Enable MSI if not enabled */
 	if (LL_RCC_MSI_IsReady() != 1) {
@@ -427,8 +431,12 @@ static int stm32_clock_control_init(struct device *dev)
 
 	/* Update SystemCoreClock variable with MSI freq */
 	/* MSI freq is defined from RUN range selection */
+#if defined (CONFIG_SOC_SERIES_STM32L0X)
+	LL_SetSystemCoreClock(__LL_RCC_CALC_MSI_FREQ(LL_RCC_MSI_GetRange()));
+#else
 	LL_SetSystemCoreClock(__LL_RCC_CALC_MSI_FREQ(LL_RCC_MSIRANGESEL_RUN,
 						     LL_RCC_MSI_GetRange()));
+#endif
 
 	/* Set APB1 & APB2 prescaler*/
 	LL_RCC_SetAPB1Prescaler(s_ClkInitStruct.APB1CLKDivider);
