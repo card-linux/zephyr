@@ -12,9 +12,19 @@ menuconfig COUNTER_RTC_STM32
 	select USE_STM32_LL_PWR
 	select USE_STM32_LL_RCC
 	select USE_STM32_LL_EXTI
-	select NEWLIB_LIBC
+	select NEWLIB_LIBC if COUNTER_RTC_STM32_PROVIDE_EPOCH_TIME
 	help
 	  Build RTC driver for STM32 SoCs. Tested on STM32 F3, F4, L4, F7 series
+
+config COUNTER_RTC_STM32_PROVIDE_EPOCH_TIME
+	bool "Provide epoch time"
+	default y
+	help
+	  Implement the normal Zephyr API for 2000 epoch time.  You probably want
+	  this, but if severely space-constrained, you can turn it off (and it will
+	  just return 0).
+
+	  The read_tm call will be available.
 
 choice COUNTER_RTC_STM32_CLOCK_SRC
 	bool "RTC clock source"

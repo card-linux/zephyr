@@ -172,6 +172,7 @@ struct counter_config_info {
 typedef int (*counter_api_start)(struct device *dev);
 typedef int (*counter_api_stop)(struct device *dev);
 typedef u32_t (*counter_api_read)(struct device *dev);
+typedef void (*counter_api_read_tm)(struct device *dev, struct tm *tm);
 typedef int (*counter_api_set_alarm)(struct device *dev, u8_t chan_id,
 				const struct counter_alarm_cfg *alarm_cfg);
 typedef int (*counter_api_cancel_alarm)(struct device *dev, u8_t chan_id);
@@ -189,6 +190,7 @@ struct counter_driver_api {
 	counter_api_start start;
 	counter_api_stop stop;
 	counter_api_read read;
+	counter_api_read_tm read_tm;
 	counter_api_set_alarm set_alarm;
 	counter_api_cancel_alarm cancel_alarm;
 	counter_api_set_top_value set_top_value;

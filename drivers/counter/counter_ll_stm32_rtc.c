@@ -76,11 +76,9 @@ static int rtc_stm32_stop(struct device *dev)
 }
 
 
-static u32_t rtc_stm32_read(struct device *dev)
+static void rtc_stm32_read_tm(struct device *dev, struct tm *now)
 {
-	struct tm now = { 0 };
-	time_t ts;
-	u32_t rtc_date, rtc_time, ticks;
+	u32_t rtc_date, rtc_time;
 
 	ARG_UNUSED(dev);
 
@@ -91,20 +89,31 @@ static u32_t rtc_stm32_read(struct device *dev)
 	/* Convert calendar datetime to UNIX timestamp */
 	/* RTC start time: 1st, Jan, 2000 */
 	/* time_t start:   1st, Jan, 1900 */
-	now.tm_year = 100 +
+	now->tm_year = 100 +
 			__LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_YEAR(rtc_date));
 	/* tm_mon allowed values are 0-11 */
-	now.tm_mon = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_MONTH(rtc_date)) - 1;
-	now.tm_mday = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_DAY(rtc_date));
+	now->tm_mon = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_MONTH(rtc_date)) - 1;
+	now->tm_mday = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_DAY(rtc_date));
 
-	now.tm_hour = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_HOUR(rtc_time));
-	now.tm_min = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_MINUTE(rtc_time));
-	now.tm_sec = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_SECOND(rtc_time));
+	now->tm_hour = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_HOUR(rtc_time));
+	now->tm_min = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_MINUTE(rtc_time));
+	now->tm_sec = __LL_RTC_CONVERT_BCD2BIN(__LL_RTC_GET_SECOND(rtc_time));
+}
+
+static u32_t rtc_stm32_read(struct device *dev)
+{
+	u32_t ticks;
+	time_t ts = 0;
+#if defined(CONFIG_RTC_STM32_PROVIDE_EPOCH_TIME)
+	struct tm now = { 0 };
+
+	rtc_stm32_read_tm(dev, &now);
 
 	ts = mktime(&now);
 
 	/* Return number of seconds since RTC init */
 	ts -= T_TIME_OFFSET;
+#endif
 
 	__ASSERT(sizeof(time_t) == 8, "unexpected time_t definition");
 	ticks = counter_us_to_ticks(dev, ts * USEC_PER_SEC);
@@ -354,6 +363,7 @@ static const struct counter_driver_api rtc_stm32_driver_api = {
 		.start = rtc_stm32_start,
 		.stop = rtc_stm32_stop,
 		.read = rtc_stm32_read,
+		.read_tm = rtc_stm32_read_tm,
 		.set_alarm = rtc_stm32_set_alarm,
 		.cancel_alarm = rtc_stm32_cancel_alarm,
 		.set_top_value = rtc_stm32_set_top_value,
