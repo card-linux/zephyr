@@ -209,6 +209,12 @@ config CLOCK_STM32_MCO1_SRC_HSE
 	help
 	  Use HSE as source of MCO1
 
+config CLOCK_STM32_MCO1_SRC_MSI
+	bool "MSI"
+	depends on SOC_SERIES_STM32L0X
+	help
+	  Use MSI as source of MCO1
+
 config CLOCK_STM32_MCO1_SRC_HSI
 	bool "HSI"
 	depends on SOC_SERIES_STM32F4X
