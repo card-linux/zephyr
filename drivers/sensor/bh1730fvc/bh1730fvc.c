@@ -92,9 +92,13 @@ static int bh1730fvc_channel_get(struct device *dev,
 
 	switch (chan) {
 	case SENSOR_CHAN_LIGHT:
-		return bh1730fvc_data->sample.visible;
+		val->val1 = bh1730fvc_data->sample.visible;
+		val->val2 = 0;
+		return 0;
 	case SENSOR_CHAN_IR:
-		return bh1730fvc_data->sample.infrared;
+		val->val1 = bh1730fvc_data->sample.infrared;
+		val->val2 = 0; // TODO
+		return 0;
 	default:
 		return -ENOTSUP;
 	}
