@@ -268,21 +268,25 @@ void spi_context_update_tx(struct spi_context *ctx, u8_t dfs, u32_t len)
 		return;
 	}
 
+	/*
 	if (len > ctx->tx_len) {
 		LOG_ERR("Update exceeds current buffer");
 		return;
 	}
+	*/
 
 	ctx->tx_len -= len;
 	if (!ctx->tx_len) {
 		ctx->tx_count--;
+		/*
 		if (ctx->tx_count) {
 			ctx->current_tx++;
 			ctx->tx_buf = (const u8_t *)ctx->current_tx->buf;
 			ctx->tx_len = ctx->current_tx->len / dfs;
 		} else {
+		*/
 			ctx->tx_buf = NULL;
-		}
+		// }
 	} else if (ctx->tx_buf) {
 		ctx->tx_buf += dfs * len;
 	}

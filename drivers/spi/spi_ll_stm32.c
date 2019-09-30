@@ -4,6 +4,12 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#pragma GCC push_options
+#pragma GCC optimize ("O3")
+
+#include <pinmux/stm32/pinmux_stm32.h>
+#include <drivers/gpio.h>
+
 #define LOG_LEVEL CONFIG_SPI_LOG_LEVEL
 #include <logging/log.h>
 LOG_MODULE_REGISTER(spi_ll_stm32);
@@ -51,7 +57,7 @@ LOG_MODULE_REGISTER(spi_ll_stm32);
 
 static bool spi_stm32_transfer_ongoing(struct spi_stm32_data *data)
 {
-	return spi_context_tx_on(&data->ctx) || spi_context_rx_on(&data->ctx);
+	return spi_context_tx_on(&data->ctx) /*|| spi_context_rx_on(&data->ctx)*/;
 }
 
 static int spi_stm32_get_err(SPI_TypeDef *spi)
@@ -77,16 +83,23 @@ static inline u16_t spi_stm32_next_tx(struct spi_stm32_data *data)
 {
 	u16_t tx_frame = SPI_STM32_TX_NOP;
 
+		/*
 	if (spi_context_tx_buf_on(&data->ctx)) {
 		if (SPI_WORD_SIZE_GET(data->ctx.config->operation) == 8) {
+		*/
 			tx_frame = UNALIGNED_GET((u8_t *)(data->ctx.tx_buf));
+		/*
 		} else {
 			tx_frame = UNALIGNED_GET((u16_t *)(data->ctx.tx_buf));
 		}
 	}
+		*/
 
 	return tx_frame;
 }
+
+typedef void (*tx_fun)(SPI_TypeDef *, unsigned char);
+typedef unsigned char (*rx_fun)(SPI_TypeDef *);
 
 /* Shift a SPI frame as master. */
 static void spi_stm32_shift_m(SPI_TypeDef *spi, struct spi_stm32_data *data)
@@ -111,33 +124,14 @@ static void spi_stm32_shift_m(SPI_TypeDef *spi, struct spi_stm32_data *data)
 	}
 #endif
 
-	if (SPI_WORD_SIZE_GET(data->ctx.config->operation) == 8) {
-		LL_SPI_TransmitData8(spi, tx_frame);
-		/* The update is ignored if TX is off. */
-		spi_context_update_tx(&data->ctx, 1, 1);
-	} else {
-		LL_SPI_TransmitData16(spi, tx_frame);
-		/* The update is ignored if TX is off. */
-		spi_context_update_tx(&data->ctx, 2, 1);
-	}
+	LL_SPI_TransmitData8(spi, tx_frame);
+	spi_context_update_tx(&data->ctx, 1, 1);
 
 	while (!ll_func_rx_is_not_empty(spi)) {
 		/* NOP */
 	}
 
-	if (SPI_WORD_SIZE_GET(data->ctx.config->operation) == 8) {
-		rx_frame = LL_SPI_ReceiveData8(spi);
-		if (spi_context_rx_buf_on(&data->ctx)) {
-			UNALIGNED_PUT(rx_frame, (u8_t *)data->ctx.rx_buf);
-		}
-		spi_context_update_rx(&data->ctx, 1, 1);
-	} else {
-		rx_frame = LL_SPI_ReceiveData16(spi);
-		if (spi_context_rx_buf_on(&data->ctx)) {
-			UNALIGNED_PUT(rx_frame, (u16_t *)data->ctx.rx_buf);
-		}
-		spi_context_update_rx(&data->ctx, 2, 1);
-	}
+	rx_frame = LL_SPI_ReceiveData8(spi);
 }
 
 /* Shift a SPI frame as slave. */
@@ -181,13 +175,17 @@ static void spi_stm32_shift_s(SPI_TypeDef *spi, struct spi_stm32_data *data)
  */
 static int spi_stm32_shift_frames(SPI_TypeDef *spi, struct spi_stm32_data *data)
 {
-	u16_t operation = data->ctx.config->operation;
+	//u16_t operation = data->ctx.config->operation;
 
+	/*
 	if (SPI_OP_MODE_GET(operation) == SPI_OP_MODE_MASTER) {
+	*/
 		spi_stm32_shift_m(spi, data);
+	/*
 	} else {
 		spi_stm32_shift_s(spi, data);
 	}
+	*/
 
 	return spi_stm32_get_err(spi);
 }
@@ -435,9 +433,23 @@ static int transceive(struct device *dev,
 
 	ret = spi_context_wait_for_completion(&data->ctx);
 #else
+	static const struct pin_config pinconf_spi[] = {
+		{STM32_PIN_PA7,
+		STM32_PINMUX_ALT_FUNC_0 | STM32_PUSHPULL_NOPULL | STM32_OSPEEDR_VERY_HIGH_SPEED},
+	};
+
+	static const struct pin_config pinconf_gpio[] = {
+		{STM32_PIN_PA7, STM32_MODER_OUTPUT_MODE | STM32_PUSHPULL_NOPULL | STM32_OSPEEDR_VERY_HIGH_SPEED},
+	};
+
+	gpio_pin_write(device_get_binding("GPIOA"), 7, 0);
+	stm32_setup_pins(pinconf_spi, 1);
+
 	do {
 		ret = spi_stm32_shift_frames(spi, data);
 	} while (!ret && spi_stm32_transfer_ongoing(data));
+
+	stm32_setup_pins(pinconf_gpio, 1);
 
 	spi_stm32_complete(data, spi, ret);
 
@@ -730,3 +742,5 @@ static void spi_stm32_irq_config_func_6(struct device *dev)
 #endif
 
 #endif /* CONFIG_SPI_6 */
+
+#pragma GCC pop_options
